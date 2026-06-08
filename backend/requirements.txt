@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+python-multipart
+websockets
+
+numpy==1.24.3
+pandas==2.0.3
+opencv-python-headless==4.11.0.86
+Pillow==10.0.0
+onnxruntime==1.15.1
+pymongo==4.9.2
+
+plotly==5.18.0
+matplotlib==3.7.2
+
+streamlit==1.41.1
+streamlit-desktop-app==0.3.4
