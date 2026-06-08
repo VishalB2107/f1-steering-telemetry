@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-f1-red: #E10600;
+  --color-f1-black: #060709;
+  --color-f1-card: #0D0E11;
+  --color-f1-gray: #15181E;
+  --color-f1-gray-light: #222730;
+  --color-f1-blue: #00D2FF;
+  --color-f1-green: #00E676;
+  --color-f1-white: #FFFFFF;
+  --color-f1-border: rgba(255, 255, 255, 0.07);
+}
+
+:root {
+  --background: #060709;
+  --foreground: #ededed;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom styling for F1 aesthetics */
+.carbon-grid {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.f1-card-glow:hover {
+  box-shadow: 0 0 15px rgba(225, 6, 0, 0.15);
+  border-color: rgba(225, 6, 0, 0.3);
+}
+
+.f1-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.f1-scrollbar::-webkit-scrollbar-track {
+  background: #060709;
+}
+
+.f1-scrollbar::-webkit-scrollbar-thumb {
+  background: #222730;
+  border-radius: 3px;
+}
+
+.f1-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #E10600;
+}
+
+/* LED tachometer animations */
+@keyframes led-blink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.led-blink-fast {
+  animation: led-blink 0.2s infinite;
+}
+
+/* Sleek range input customization */
+input[type="range"]::-webkit-slider-thumb {
+  background: #E10600;
+  border: 2px solid #FFFFFF;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+}

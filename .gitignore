@@ -1,0 +1,43 @@
+*.pyc
+*.spec
+
+/img_test
+/dist
+/build
+/venv
+.env
+.streamlit/secrets.toml
+.dockerignore
+
+# Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+.env
+.env.local
+.env.production
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# FastAPI cache
+backend/__pycache__/
+
+# Build folders
+dist/
+build/
