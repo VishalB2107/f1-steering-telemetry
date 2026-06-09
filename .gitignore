@@ -41,3 +41,5 @@ backend/__pycache__/
 # Build folders
 dist/
 build/
+
+Phase-1/

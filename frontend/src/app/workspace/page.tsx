@@ -57,8 +57,8 @@ export default function WorkspacePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // API host configuration (points to FastAPI server on port 8000)
-  const apiHost = "http://localhost:8000";
-  const wsHost = "ws://localhost:8000";
+  const apiHost = "https://f1-steering-api.onrender.com";
+  const wsHost = "wss://f1-steering-api.onrender.com";
 
   // Session states
   const [sessionId, setSessionId] = useState<string | null>(null);
