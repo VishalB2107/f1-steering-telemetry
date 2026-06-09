@@ -57,8 +57,17 @@ export default function WorkspacePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // API host configuration (points to FastAPI server on port 8000)
-  const apiHost = "https://f1-steering-api.onrender.com";
-  const wsHost = "wss://f1-steering-api.onrender.com";
+  const isLocal =
+    typeof window !== "undefined" &&
+    localStorage.getItem("backendMode") === "local";
+
+  const apiHost = isLocal
+    ? "http://localhost:8000"
+    : "https://f1-steering-api.onrender.com";
+
+  const wsHost = isLocal
+    ? "ws://localhost:8000"
+    : "wss://f1-steering-api.onrender.com";
 
   // Session states
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -68,6 +77,13 @@ export default function WorkspacePage() {
   const [duration, setDuration] = useState<number>(0);
   const [videoWidth, setVideoWidth] = useState<number>(1920);
   const [videoHeight, setVideoHeight] = useState<number>(1080);
+  const [backendMode, setBackendMode] = useState(() => {
+  if (typeof window === "undefined") {
+    return "cloud";
+  }
+
+  return localStorage.getItem("backendMode") || "cloud";
+});
   
   // Selection ranges
   const [startFrameMin, setStartFrameMin] = useState<number>(0);
@@ -330,6 +346,38 @@ export default function WorkspacePage() {
 
   return (
     <div className="min-h-screen bg-f1-black flex flex-col justify-between text-white select-none relative overflow-x-hidden">
+
+    <div className="fixed top-4 right-4 z-50 flex gap-2">
+      <button
+        onClick={() => {
+          localStorage.setItem("backendMode", "local");
+          setBackendMode("local");
+          window.location.reload();
+        }}
+        className="px-3 py-2 bg-green-600 rounded"
+      >
+        🟢 Local
+      </button>
+
+      <button
+        onClick={() => {
+          localStorage.setItem("backendMode", "cloud");
+          setBackendMode("cloud");
+          window.location.reload();
+        }}
+        className="px-3 py-2 bg-blue-600 rounded"
+      >
+        ☁ Cloud
+      </button>
+    </div>
+    <div className="fixed top-16 right-4 z-50 bg-black border border-gray-700 px-3 py-1 rounded text-xs">
+  Active Backend:
+  <span className="font-bold ml-1">
+    {backendMode === "local"
+      ? "🟢 localhost:8000"
+      : "☁ Render"}
+  </span>
+</div>
       {/* Top Navigation */}
       <header className="border-b border-f1-border bg-f1-black/90 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -569,6 +617,7 @@ export default function WorkspacePage() {
                   {/* Processing / Analyzing Screen */}
                   {isAnalyzing && (
                     <motion.div
+                      key="analyzing"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -629,7 +678,7 @@ export default function WorkspacePage() {
 
                   {/* Standard results state */}
                   {!resultsData ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                    <div key="empty-state" className="flex flex-col items-center justify-center py-16 text-center space-y-4">
                       <div className="h-12 w-12 rounded-full border border-f1-border flex items-center justify-center text-gray-500">
                         <Activity className="w-6 h-6" />
                       </div>
@@ -649,6 +698,7 @@ export default function WorkspacePage() {
                   ) : (
                     /* High fidelity Recharts chart */
                     <motion.div
+                      key="chart"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       className="space-y-4 w-full h-full flex flex-col justify-between"
@@ -878,8 +928,8 @@ export default function WorkspacePage() {
                     }}
                     className="w-full bg-f1-gray border border-f1-border p-2 rounded text-xs text-white focus:outline-none focus:border-f1-red font-semibold uppercase"
                   >
-                    {teams.map((t, i) => (
-                      <option key={i} value={t}>{t}</option>
+                    {teams.map((t) => (
+                      <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
                 </div>
@@ -892,8 +942,8 @@ export default function WorkspacePage() {
                     onChange={(e) => setSelectedDriver(e.target.value)}
                     className="w-full bg-f1-gray border border-f1-border p-2 rounded text-xs text-white focus:outline-none focus:border-f1-red font-semibold uppercase"
                   >
-                    {selectedTeam && driversByTeam[selectedTeam]?.map((d, i) => (
-                      <option key={i} value={d}>{d}</option>
+                    {selectedTeam && driversByTeam[selectedTeam]?.map((d) => (
+                      <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
                 </div>
