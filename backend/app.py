@@ -25,6 +25,10 @@ from utils.model_handler import ModelHandler
 from utils.helper import BASE_DIR, metrics_collection, metrics_page
 
 
+
+app = FastAPI(title="F1 Steering Angle Telemetry API")
+
+
 @app.get("/api/debug")
 def debug():
     return {
@@ -35,9 +39,8 @@ def debug():
             "f1-steering-angle-model_100.onnx": Path("models/f1-steering-angle-model_100.onnx").exists(),
         }
     }
-
-app = FastAPI(title="F1 Steering Angle Telemetry API")
-
+    
+    
 # Enable CORS for the Next.js frontend
 app.add_middleware(
     CORSMiddleware,
