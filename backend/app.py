@@ -214,16 +214,23 @@ def get_video_stream(session_id: str):
 
 @app.websocket("/api/ws/analyze")
 async def websocket_analyze(websocket: WebSocket):
-    """
-    WebSocket channel to run the steering angle inference.
-    Receives config parameters and streams telemetry-style progress updates frame-by-frame.
-    """
+
     await websocket.accept()
-    
+    print("STEP 1 - websocket accepted")
+
     try:
         # 1. Receive analysis parameters
         data = await websocket.receive_text()
+        print("STEP 2 - received websocket payload")
+
         config = json.loads(data)
+        print("STEP 3 - parsed config")
+
+        session_id = config.get("session_id")
+        start_frame = int(config.get("start_frame", 0))
+        end_frame = int(config.get("end_frame", -1))
+        driver_crop_type = config.get("driver_crop_type")
+        postprocessing_mode = config.get("postprocessing_mode", "Default")
         
         session_id = config.get("session_id")
         start_frame = int(config.get("start_frame", 0))
@@ -237,12 +244,18 @@ async def websocket_analyze(websocket: WebSocket):
             return
 
         vp = active_sessions[session_id]
+        print("STEP 4 - loaded session")
+
         mh = ModelHandler()
+        print("STEP 5 - ModelHandler created")
         
         # Load configs
         vp.mode = postprocessing_mode
+
         vp.load_crop_variables(driver_crop_type)
-        mh.fps = vp.fps  # Original video FPS
+        print("STEP 6 - crop variables loaded")
+
+        mh.fps = vp.fps
 
         total_frames_range = end_frame - start_frame + 1
         
@@ -252,6 +265,8 @@ async def websocket_analyze(websocket: WebSocket):
             "progress": 5,
             "message": "Initializing model architecture and session configurations..."
         })
+        
+        print("STEP 7 - first websocket message sent")
 
         # Generate target frame indices matching the original video processor logic
         # Downsample target to original FPS (which is the default behavior in streamlit_app.py)
