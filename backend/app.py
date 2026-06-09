@@ -2,6 +2,7 @@ import sys
 import os
 from pathlib import Path
 
+
 # Add root folder to sys.path so we can import utils and models successfully
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -22,6 +23,18 @@ from typing import Dict, List
 from utils.video_processor import VideoProcessor
 from utils.model_handler import ModelHandler
 from utils.helper import BASE_DIR, metrics_collection, metrics_page
+
+
+@app.get("/api/debug")
+def debug():
+    return {
+        "cwd": str(Path.cwd()),
+        "models_exist": {
+            "best-224.onnx": Path("models/best-224.onnx").exists(),
+            "f1-steering-angle-model.onnx": Path("models/f1-steering-angle-model.onnx").exists(),
+            "f1-steering-angle-model_100.onnx": Path("models/f1-steering-angle-model_100.onnx").exists(),
+        }
+    }
 
 app = FastAPI(title="F1 Steering Angle Telemetry API")
 
