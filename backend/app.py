@@ -214,20 +214,61 @@ def get_video_stream(session_id: str):
 
 @app.websocket("/api/ws/analyze")
 async def websocket_analyze(websocket: WebSocket):
-
+    import time
+    import asyncio
+    
+    ws_start_time = time.time()
+    
     await websocket.accept()
-    print("STEP 1 - websocket accepted")
+    print("=" * 80)
+    print(f"[{time.time()}] ✓ WEBSOCKET ACCEPTED - Client connected")
+    print(f"[{time.time()}] STEP 1: WebSocket connection accepted from client")
+    print(f"[{time.time()}] STEP 1: Now waiting for JSON payload from client...")
+    print("=" * 80)
 
     try:
-        # 1. Receive analysis parameters
-        data = await websocket.receive_text()
+        # 1. Receive analysis parameters with timeout detection
+        receive_start = time.time()
+        print(f"[{receive_start}] STEP 2: Calling websocket.receive_text()...")
+        print(f"[{receive_start}] STEP 2: Setting timeout to 30 seconds to detect hanging...")
         
-        print("RENDER DEBUG: received websocket data")
-        print(data)
-        print("STEP 2 - received websocket payload")
-
+        try:
+            # Set a 30 second timeout to detect if receive is hanging
+            data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+            receive_end = time.time()
+            
+            print("=" * 80)
+            print(f"[{receive_end}] ✓ SUCCESS: Received data from client!")
+            print(f"[{receive_end}] STEP 3: Data received after {receive_end - receive_start:.2f} seconds")
+            print(f"[{receive_end}] STEP 3: Data type: {type(data).__name__}")
+            print(f"[{receive_end}] STEP 3: Data length: {len(data)} bytes")
+            print(f"[{receive_end}] STEP 4: Data content:")
+            print(data)
+            print("=" * 80)
+            
+        except asyncio.TimeoutError:
+            timeout_time = time.time()
+            print("=" * 80)
+            print(f"[{timeout_time}] ✗ CRITICAL ERROR: websocket.receive_text() TIMEOUT!")
+            print(f"[{timeout_time}] The receive call waited 30 seconds but received NOTHING from client")
+            print(f"[{timeout_time}] This means: Client never sent the payload after connection")
+            print(f"[{timeout_time}] Total time since accept: {timeout_time - ws_start_time:.2f} seconds")
+            print("=" * 80)
+            try:
+                await websocket.send_json({
+                    "stage": "Error",
+                    "progress": 0,
+                    "message": "Backend timeout: Client connected but never sent analysis payload"
+                })
+            except:
+                pass
+            return
+        
+        print(f"[{time.time()}] STEP 5: Parsing JSON configuration...")
         config = json.loads(data)
-        print("STEP 3 - parsed config")
+        print(f"[{time.time()}] STEP 6: ✓ Config parsed successfully")
+        print(f"[{time.time()}] Config keys: {list(config.keys())}")
+        print(f"[{time.time()}] Config content: {config}")
 
         session_id = config.get("session_id")
         start_frame = int(config.get("start_frame", 0))
@@ -235,41 +276,46 @@ async def websocket_analyze(websocket: WebSocket):
         driver_crop_type = config.get("driver_crop_type")
         postprocessing_mode = config.get("postprocessing_mode", "Default")
         
-        session_id = config.get("session_id")
-        start_frame = int(config.get("start_frame", 0))
-        end_frame = int(config.get("end_frame", -1))
-        driver_crop_type = config.get("driver_crop_type")
-        postprocessing_mode = config.get("postprocessing_mode", "Default")
-        
+        print(f"[{time.time()}] STEP 7 - Extracted config values:")
+        print(f"  - session_id: {session_id}")
+        print(f"  - start_frame: {start_frame}")
+        print(f"  - end_frame: {end_frame}")
+        print(f"  - driver_crop_type: {driver_crop_type}")
+        print(f"  - postprocessing_mode: {postprocessing_mode}")
+
         if not session_id or session_id not in active_sessions:
+            print(f"[{time.time()}] ERROR: Invalid session ID")
+            print(f"  - session_id provided: {session_id}")
+            print(f"  - active_sessions keys: {list(active_sessions.keys())}")
             await websocket.send_json({"stage": "Error", "progress": 0, "message": "Invalid session ID"})
             await websocket.close()
             return
 
         vp = active_sessions[session_id]
-        print("STEP 4 - loaded session")
+        print(f"[{time.time()}] STEP 7 - Loaded session from active_sessions")
 
         mh = ModelHandler()
-        print("STEP 5 - ModelHandler created")
+        print(f"[{time.time()}] STEP 8 - ModelHandler created")
         
         # Load configs
         vp.mode = postprocessing_mode
 
         vp.load_crop_variables(driver_crop_type)
-        print("STEP 6 - crop variables loaded")
+        print(f"[{time.time()}] STEP 9 - Crop variables loaded")
 
         mh.fps = vp.fps
 
         total_frames_range = end_frame - start_frame + 1
         
         # Step 1: Loading Session
+        print(f"[{time.time()}] STEP 10 - Sending 'Loading Session' message to client")
         await websocket.send_json({
             "stage": "Loading Session",
             "progress": 5,
             "message": "Initializing model architecture and session configurations..."
         })
         
-        print("STEP 7 - first websocket message sent")
+        print(f"[{time.time()}] STEP 11 - First WebSocket message sent successfully")
 
         # Generate target frame indices matching the original video processor logic
         # Downsample target to original FPS (which is the default behavior in streamlit_app.py)
@@ -385,22 +431,33 @@ async def websocket_analyze(websocket: WebSocket):
         })
         
     except WebSocketDisconnect:
-        print("WebSocket disconnected client-side.")
+        print("=" * 60)
+        print("ERROR: WebSocket disconnected client-side")
+        print(f"[{time.time()}] The client closed the connection unexpectedly")
+        print("=" * 60)
     except Exception as e:
-        print("Error during WebSocket analysis:", e)
+        import traceback
+        print("=" * 60)
+        print("ERROR during WebSocket analysis:")
+        print(f"[{time.time()}] Exception type: {type(e).__name__}")
+        print(f"[{time.time()}] Exception message: {str(e)}")
+        print(f"[{time.time()}] Full traceback:")
+        traceback.print_exc()
+        print("=" * 60)
         try:
             await websocket.send_json({
                 "stage": "Error",
                 "progress": 0,
                 "message": f"Server processing error: {str(e)}"
             })
-        except:
-            pass
+        except Exception as send_error:
+            print(f"[{time.time()}] ERROR: Could not send error message to client: {send_error}")
     finally:
         try:
             await websocket.close()
-        except:
-            pass
+            print(f"[{time.time()}] WebSocket properly closed")
+        except Exception as close_error:
+            print(f"[{time.time()}] ERROR closing socket: {close_error}")
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

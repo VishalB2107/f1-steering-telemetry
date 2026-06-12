@@ -232,20 +232,58 @@ export default function WorkspacePage() {
     
     const startTime = Date.now();
 
+    console.log("WS STEP 1: Creating WebSocket connection");
+    console.log(`WS STEP 1: Using wsHost=${wsHost}`);
+    console.log(`WS STEP 1: Full URL=${wsHost}/api/ws/analyze`);
+
     const socket = new WebSocket(`${wsHost}/api/ws/analyze`);
 
+    console.log("WS STEP 1.5: WebSocket created, waiting for onopen...");
+    console.log(`WS STEP 1.5: Initial readyState=${socket.readyState} (0=CONNECTING)`);
+
     socket.onopen = () => {
-      setLogHistory(prev => [...prev, "[SYS_CORE] Connection established. Transmitting processing packet..."]);
-      socket.send(JSON.stringify({
+      console.log("WS STEP 2: Socket opened");
+      console.log(`WS STEP 2: readyState=${socket.readyState} (1=OPEN)`);
+
+      const payload = {
         session_id: sessionId,
         start_frame: startFrame,
         end_frame: endFrame,
         driver_crop_type: selectedDriver,
         postprocessing_mode: postprocessingMode
-      }));
+      };
+
+      console.log("WS STEP 3: Payload object created:");
+      console.log("WS_PAYLOAD:", payload);
+
+      const jsonString = JSON.stringify(payload);
+      console.log("WS STEP 4: Converted to JSON string:");
+      console.log("WS_PAYLOAD_STRING:", jsonString);
+      console.log(`WS_PAYLOAD_LENGTH: ${jsonString.length} bytes`);
+
+      try {
+        console.log("WS STEP 5: Calling socket.send()...");
+        socket.send(jsonString);
+        console.log("WS STEP 6: socket.send() completed without error");
+        console.log(`WS STEP 6: readyState after send=${socket.readyState} (1=OPEN, 2=CLOSING, 3=CLOSED)`);
+
+        setLogHistory(prev => [...prev, "[SYS_CORE] Connection established. Transmitting processing packet..."]);
+      } catch (sendError) {
+        console.error("WS STEP 6 ERROR: socket.send() threw an exception:", sendError);
+        setAnalysisError(`Failed to send payload: ${sendError}`);
+        setIsAnalyzing(false);
+        try {
+          socket.close();
+        } catch (e) {
+          console.error("Error closing socket after send failure:", e);
+        }
+      }
     };
 
     socket.onmessage = (event) => {
+      console.log("WS STEP 7: Received message from backend");
+      console.log("WS_MESSAGE_DATA:", event.data);
+
       const data = JSON.parse(event.data);
       if (data.stage === "Completed") {
         setAnalysisStage("Completed");
@@ -275,9 +313,20 @@ export default function WorkspacePage() {
     };
 
     socket.onerror = (err) => {
-      console.error("WebSocket Error:", err);
-      setAnalysisError("Telemetry connection dropped by host");
+      console.error("WS STEP ERROR: WebSocket error event fired:", err);
+      console.error(`WS STEP ERROR: readyState=${socket.readyState}`);
+      setAnalysisError("Telemetry connection error");
       setIsAnalyzing(false);
+    };
+
+    socket.onclose = (event) => {
+      console.log("WS STEP CLOSE: WebSocket closed");
+      console.log(`WS STEP CLOSE: code=${event.code}, reason=${event.reason}`);
+      console.log(`WS STEP CLOSE: wasClean=${event.wasClean}`);
+      if (!event.wasClean && !analysisError) {
+        setAnalysisError("WebSocket connection closed unexpectedly");
+        setIsAnalyzing(false);
+      }
     };
   };
 
