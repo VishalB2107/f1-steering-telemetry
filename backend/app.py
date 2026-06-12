@@ -221,6 +221,9 @@ async def websocket_analyze(websocket: WebSocket):
     try:
         # 1. Receive analysis parameters
         data = await websocket.receive_text()
+        
+        print("RENDER DEBUG: received websocket data")
+        print(data)
         print("STEP 2 - received websocket payload")
 
         config = json.loads(data)
