@@ -454,8 +454,24 @@ async def websocket_analyze(websocket: WebSocket):
             print(f"[{time.time()}] ERROR: Could not send error message to client: {send_error}")
     finally:
         try:
+        # Cleanup session memory
+            if 'session_id' in locals():
+                if session_id in active_sessions:
+                    try:
+                        active_sessions[session_id].clean_up()
+                    except Exception as cleanup_error:
+                        print(f"Cleanup error: {cleanup_error}")
+
+                    del active_sessions[session_id]
+
+                if session_id in session_metadata:
+                    del session_metadata[session_id]
+
+                print(f"Session {session_id} removed from memory")
+
             await websocket.close()
             print(f"[{time.time()}] WebSocket properly closed")
+
         except Exception as close_error:
             print(f"[{time.time()}] ERROR closing socket: {close_error}")
 
